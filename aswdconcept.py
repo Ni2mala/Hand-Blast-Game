@@ -1,9 +1,6 @@
 import cv2
 import random
 import time
-import mediapipe as mp
-
-
 
 # --- 1. FUNCTIONS (Knowledge & Logic Definitions) ---
 def is_hit(cx, cy, target):
