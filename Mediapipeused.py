@@ -1,3 +1,4 @@
+
 import cv2
 import random
 import time
@@ -70,12 +71,18 @@ last_time = time.time()
 speed =300
 cool_down = 0.5
 last_shot_time = 0
+smooth_cx, smooth_cy = cx, cy
+SMOOTHING =0.2
 
+previous_gesture =None
+SHOOT_GESTURE = "Pointing_Up"
+SHOT_COOLDOWN = 0.5  # seconds
 
 # Add 20 targets without duplicating logic (Requirement #1)
 targets = [spawn_target(w, h) for _ in range(20)]
 
 while True:
+    current_gesture = None
     current_time = time.time()
     dt = current_time - last_time
     last_time = current_time
@@ -87,13 +94,24 @@ while True:
     rgb =cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
     result = recognizer.recognize_for_video(mp_image, timestamp)
+
     
     if result.hand_landmarks:
         hand_landmarks = result.hand_landmarks[0]
         index_tip =hand_landmarks[8]
 
-        cx = int(index_tip.x *w)
-        cy = int(index_tip.y *h)
+        raw_cx = index_tip.x *w
+        raw_cy = index_tip.y *h
+
+        smooth_cx = SMOOTHING *raw_cx +(1-SMOOTHING) * smooth_cx
+        smooth_cy = SMOOTHING *raw_cy +(1-SMOOTHING) * smooth_cy
+
+        cx = int(smooth_cx)
+        cy = int(smooth_cy)
+
+    if result.gestures:
+        current_gesture = result.gestures[0][0].category_name
+
 
     key = cv2.waitKey(1)
     if key == ord('q'): break
@@ -103,6 +121,17 @@ while True:
         update_target(target,dt, w, h) 
 
     # --- 3. THE "SHOOT" LOGIC ---
+
+    shoot = False
+    if (
+        current_gesture == SHOOT_GESTURE and
+        previous_gesture != SHOOT_GESTURE and
+        current_time - last_shot_time > SHOT_COOLDOWN
+    ):
+        shoot = True
+        last_shot_time = current_time
+
+
     shoot = False
     if shoot:
         hit_count = 0
@@ -117,8 +146,22 @@ while True:
             
         else:
             print("MISS!")
-    # --- 4. DRAWING ---
 
+    # Update previous gesture for next frame
+    previous_gesture = current_gesture
+
+
+    # Dynamic crosshair color
+    if shoot:
+        crosshair_color = (0, 0, 255)      # fired (red)
+    elif current_gesture == SHOOT_GESTURE:
+        crosshair_color = (0, 255, 255)    # armed (yellow)
+    else:
+        crosshair_color = (0, 255, 0)      # idle (green)
+
+    # --- 4. DRAWING ---
+    for target in targets:
+        cv2.circle(frame, (target["x"], target["y"]), target["r"], (0, 0, 255), -1)
     # Crosshair & UI
     cv2.line(frame, (cx-20, cy), (cx+20, cy), (0,255,0), 2)
     cv2.line(frame, (cx, cy-20), (cx, cy+20), (0,255,0), 2)
@@ -128,3 +171,4 @@ while True:
 
 camera.release()
 cv2.destroyAllWindows()
+
