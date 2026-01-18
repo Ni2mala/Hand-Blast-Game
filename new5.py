@@ -21,6 +21,24 @@ def spawn_target(w, h):
         "vy":random.choice([-100, -60, 60, 100])
     }
 
+
+def update_target(target, dt, w, h):
+    target['x'] += target['vx']*dt
+    target['y'] += target['vy'*dt]
+
+    if target["x"] - target["r"] < 0 or target["x"] + target["r"] > w:
+        target["vx"] *= -1  # Reverse horizontal direction
+        # Keep target in bounds
+        target["x"] = max(target["r"], min(target["x"], w - target["r"]))
+    
+    if target["y"] - target["r"] < 0 or target["y"] + target["r"] > h:
+        target["vy"] *= -1  # Reverse vertical direction
+        # Keep target in bounds
+        target["y"] = max(target["r"], min(target["y"], h - target["r"]))
+    
+    # Keep coordinates as integers for OpenCV
+    target["x"] = int(target["x"])
+    target["y"] = int(target["y"])
 # --- 2. SETUP ---
 camera = cv2.VideoCapture(0)
 ret, frame = camera.read()
@@ -52,6 +70,9 @@ while True:
     # Boundary Checking
     cx = int(max(0, min(cx, w - 1)))
     cy = int(max(0, min(cy, h - 1)))
+
+    for target in targets:
+        update_target(target, dt, w, h) 
 
     # --- 3. THE "SHOOT" LOGIC ---
     if key == ord(' '):
