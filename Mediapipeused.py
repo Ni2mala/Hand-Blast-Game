@@ -120,34 +120,23 @@ while True:
     for target in targets:
         update_target(target,dt, w, h) 
 
-    # --- 3. THE "SHOOT" LOGIC ---
-
+    # --- 3. SHOOT LOGIC (PHASE 7) ---
     shoot = False
     if (
         current_gesture == SHOOT_GESTURE and
         previous_gesture != SHOOT_GESTURE and
         current_time - last_shot_time > SHOT_COOLDOWN
-    ):
+        ):
         shoot = True
         last_shot_time = current_time
-
-
-    shoot = False
     if shoot:
         hit_count = 0
         for target in targets[:]:
-            if is_hit(cx, cy, target): # Using your function!
+            if is_hit(cx, cy, target):
                 targets.remove(target)
-                targets.append(spawn_target(w, h)) # Using your function!
+                targets.append(spawn_target(w, h))
                 score += 1
                 hit_count += 1
-        if hit_count >0:
-            print(f'HIT! Score: {score} (+{hit_count})')
-            
-        else:
-            print("MISS!")
-
-    # Update previous gesture for next frame
     previous_gesture = current_gesture
 
 
@@ -163,11 +152,12 @@ while True:
     for target in targets:
         cv2.circle(frame, (target["x"], target["y"]), target["r"], (0, 0, 255), -1)
     # Crosshair & UI
-    cv2.line(frame, (cx-20, cy), (cx+20, cy), (0,255,0), 2)
-    cv2.line(frame, (cx, cy-20), (cx, cy+20), (0,255,0), 2)
-    cv2.circle(frame, (cx, cy), 10, (0,255,0), -1)
+    cv2.line(frame, (cx-20, cy), (cx+20, cy), crosshair_color, 2)
+    cv2.line(frame, (cx, cy-20), (cx, cy+20), crosshair_color, 2)
+    cv2.circle(frame, (cx, cy), 10, crosshair_color, -1)
     cv2.putText(frame, f'Score: {score}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
     cv2.imshow("crosshair", frame)
+
 
 camera.release()
 cv2.destroyAllWindows()
